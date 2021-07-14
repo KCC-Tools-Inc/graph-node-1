@@ -1757,7 +1757,7 @@ async fn filter_call_triggers_from_unsuccessful_transactions(
     for (transaction, receipt) in receipts_and_transactions.into_iter() {
         transaction_success.insert(
             &transaction.hash,
-            evaluate_transaction_status(receipt.status, receipt.gas_used, &transaction.gas)?,
+            evaluate_transaction_status(receipt.status),
         );
     }
 

@@ -84,39 +84,18 @@ impl EthereumBlockWithCalls {
                 "failed to find the receipt for this transaction"
             ))?;
 
-        let transaction = self
-            .ethereum_block
-            .block
-            .transaction_for_call(&call)
-            .ok_or(anyhow::anyhow!(
-                "failed to find the transaction for this call"
-            ))?;
-
-        evaluate_transaction_status(receipt.status, receipt.gas_used, &transaction.gas)
+        Ok(evaluate_transaction_status(receipt.status))
     }
 }
 
 /// Evaluates if a given transaction was successful.
 ///
 /// Returns `true` on success and `false` on failure.
-///
-/// According to EIP-658, there are two ways of checking if a transaction failed:
-/// 1. by looking at its receipt "status" boolean field, which may be absent for blocks before
-///    Byzantium fork.
-/// 2. by checking if it ran out of gas.
-pub fn evaluate_transaction_status(
-    receipt_status: Option<U64>,
-    receipt_gas_used: Option<U256>,
-    transaction_gas: &U256,
-) -> anyhow::Result<bool> {
-    if let Some(status) = receipt_status {
-        Ok(!status.is_zero())
-    } else {
-        Ok(
-            receipt_gas_used.ok_or(anyhow::anyhow!("Running in light client mode"))?
-                >= *transaction_gas,
-        )
-    }
+/// If a receipt does not have a status value (EIP-658), assume the transaction was successful.
+pub fn evaluate_transaction_status(receipt_status: Option<U64>) -> bool {
+    receipt_status
+        .map(|status| !status.is_zero())
+        .unwrap_or(true)
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq)]
